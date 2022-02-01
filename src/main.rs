@@ -126,9 +126,82 @@ impl Chip8 {
         self.pc += 2;
     }
 
-    fn op_8(&mut self) {}
+    fn op_8(&mut self) {
 
-    fn op_9(&mut self) {}
+        let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
+        let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        match self.opcode & 0x000F {
+            0x0000 =>  {
+                self.v[x as usize] = self.v[y as usize];
+                self.pc += 2;
+            },
+
+            0x0001 => {
+                self.v[x as usize] |= self.v[y as usize];
+                self.pc += 2;
+
+            },
+
+            0x0002 => {
+                self.v[x as usize] &= self.v[y as usize];
+                self.pc += 2;
+
+            },
+
+            0x0003 => {
+                self.v[x as usize] ^= self.v[y as usize];
+                self.pc += 2;
+            },
+
+            0x0004 => {
+
+                let cp: u8 = 0xFF - self.v[x as usize];
+                
+                if(self.v[y as usize] > cp) {
+                    self.v[0xF] = 1;
+                } else {
+                    self.v[0xF] = 0;
+                }
+
+                self.v[x as usize] -= self.v[y as usize];
+                self.pc +=  2;
+
+            },
+
+            0x0005 => {
+                
+            },
+
+            0x0006 => {
+
+            },
+
+            0x0007 => {
+
+            },
+
+            0x000E => {
+
+            },
+
+            _ => {
+                println!("NO OPCODE");
+            },
+        };
+    }
+
+    fn op_9(&mut self) {
+
+        let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
+        let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        if(self.v[x as usize] != self.v[y as usize]) {
+            self.pc += 4;
+        } else {
+            self.pc += 2;
+        }
+    }
 
     fn op_a(&mut self) {
         self.i = self.opcode & 0x0FFF;
@@ -147,7 +220,26 @@ impl Chip8 {
         self.pc += 2;
     }
 
-    fn op_d(&mut self) {}
+    fn op_d(&mut self) {
+        let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
+        let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        //Height
+        let h: u8 = (self.opcode & 0x000F) as u8;
+
+        let mut pixel: u8 = 0;
+        self.v[0xF] = 0;
+
+        for yline in 0..h {
+            pixel = self.memory[(self.i + (yline as u16)) as usize];
+
+            for xline in 0..8 {
+
+            }
+        }
+        
+
+    }
 
     fn op_e(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
