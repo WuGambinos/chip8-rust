@@ -4,6 +4,7 @@ use std::fs;
 use std::io::Error;
 use std::path::Path;
 
+#[derive(Debug)]
 struct Chip8 {
     memory: [u8; 4096],
     display: [u8; 64 * 32],
@@ -46,6 +47,35 @@ impl Chip8 {
 
         //First byte of opcode
         let first_byte: u16 = self.opcode & 0xF000;
+
+        match first_byte {
+
+            0x0000 => self.op_0(),
+            0x1000 => self.op_1(),
+            0x2000 => self.op_2(),
+            0x3000 => self.op_3(),
+            0x4000 => self.op_4(),
+            0x5000 => self.op_5(),
+            0x6000 => self.op_6(),
+            0x7000 => self.op_7(),
+            0x8000 => self.op_8(),
+            0x9000 => self.op_9(),
+            0xA000 => self.op_a(),
+            0xB000 => self.op_b(),
+            0xC000 => self.op_c(),
+            0xD000 => self.op_d(),
+            0xE000 => self.op_e(),
+            0xF000 => self.op_f(),
+            _ => println!("NO OPCODe"),
+        };
+
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer >  0 {
+            self.sound_timer -= 1;
+        }
     }
 
     fn op_0(&mut self) {
@@ -164,24 +194,51 @@ impl Chip8 {
                     self.v[0xF] = 0;
                 }
 
-                self.v[x as usize] -= self.v[y as usize];
+                self.v[x as usize] += self.v[y as usize];
                 self.pc +=  2;
 
             },
 
             0x0005 => {
+
+                if self.v[y as usize] > self.v[x as usize] {
+                    self.v[0xF] = 1;
+                } else {
+                    self.v[0xF] = 0;
+                }
+
+                self.v[x as usize] -= self.v[y as usize];
+                self.pc += 2;
                 
             },
 
             0x0006 => {
 
+                self.v[0xF] = self.v[x as usize] & 1;
+                self.v[x as usize] = self.v[y as usize] >> 1;
+
+                self.pc += 2;
+
             },
 
             0x0007 => {
 
+                if self.v[x as usize] > self.v[y as usize] {
+                    self.v[0xF] = 1;
+                } else {
+                    self.v[0xF] = 0;
+                }
+
+                self.v[x as usize] = self.v[y as usize] - self.v[x as usize];
+                self.pc += 2;
+
             },
 
             0x000E => {
+
+                self.v[0xF] = self.v[x as usize] & 0x80;
+                self.v[x as usize] = self.v[y as usize]  << 1;
+                self.pc += 2;
 
             },
 
@@ -235,8 +292,20 @@ impl Chip8 {
 
             for xline in 0..8 {
 
+                if (pixel & (0x80 >> xline)) != 0 {
+
+                    if self.display[(self.v[x as usize] + xline + ((self.v[y as usize] + yline) * 64)) as usize] == 1 {
+                        self.v[0xF] = 1;
+                    }
+                    
+                    self.display[(self.v[x as usize] + xline + ((self.v[y as usize] + yline) * 64)) as usize] ^= 1;
+                }
+
             }
         }
+
+        self.draw_flag = 1;
+        self.pc += 2;
         
 
     }
@@ -355,12 +424,10 @@ fn main() {
     let rom = read_file(&path).unwrap();
 
     let mut chip: Chip8 = Chip8::new();
-
-    /* for i in rom.iter() {
-        println!("{:#02x}", i);
-    }*/
-
     load_program(&mut chip, &rom);
+    chip.emulate_cycle();
+
+    println!("{:#X?}", chip);
 }
 
 fn read_file(path: &Path) -> Result<Vec<u8>, std::io::Error> {
