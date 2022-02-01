@@ -41,7 +41,7 @@ impl Chip8 {
 
     fn emulate_cycle(&mut self) {
         //Opcode
-        self.opcode = (self.memory[self.pc as usize] << 8) as u16
+        self.opcode = ((self.memory[self.pc as usize] as u16) << 8)
             | (self.memory[(self.pc + 1) as usize] as u16);
 
         //First byte of opcode
@@ -189,7 +189,7 @@ impl Chip8 {
                 }
 
                 if key_press == 0 {
-                    return ();
+                    return;
                 }
 
                 self.pc += 2;
@@ -272,13 +272,13 @@ fn main() {
 }
 
 fn read_file(path: &Path) -> Result<Vec<u8>, std::io::Error> {
-    let res = fs::read(path);
 
-    res
+    //Reads file contents into vecotr 
+    fs::read(path)
 }
 
-fn load_program(s: &mut Chip8, rom: &Vec<u8>) {
-    for i in 0..rom.len() {
-        s.memory[(i + 0x200) as usize] = rom[i];
+fn load_program(s: &mut Chip8, rom: &[u8]) {
+    for (i, v) in rom.iter().enumerate() {
+        s.memory[(i + 0x200) as usize] = *v;
     }
 }
