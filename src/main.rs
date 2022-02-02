@@ -1,7 +1,5 @@
 use rand::Rng;
-use std::ffi::OsStr;
 use std::fs;
-use std::io::Error;
 use std::path::Path;
 
 #[derive(Debug)]
@@ -188,7 +186,7 @@ impl Chip8 {
 
                 let cp: u8 = 0xFF - self.v[x as usize];
                 
-                if(self.v[y as usize] > cp) {
+                if self.v[y as usize] > cp {
                     self.v[0xF] = 1;
                 } else {
                     self.v[0xF] = 0;
@@ -253,7 +251,7 @@ impl Chip8 {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
 
-        if(self.v[x as usize] != self.v[y as usize]) {
+        if self.v[x as usize] != self.v[y as usize] {
             self.pc += 4;
         } else {
             self.pc += 2;
@@ -416,18 +414,14 @@ impl Chip8 {
 }
 
 fn main() {
-    println!("Hello, world!");
-    let num: u16 = 0xFFEE;
-    let n = num as u8;
-    println!("{}", n);
+
+
     let path: &Path = Path::new("Fishie.ch8");
     let rom = read_file(&path).unwrap();
 
     let mut chip: Chip8 = Chip8::new();
     load_program(&mut chip, &rom);
     chip.emulate_cycle();
-
-    println!("{:#X?}", chip);
 }
 
 fn read_file(path: &Path) -> Result<Vec<u8>, std::io::Error> {
