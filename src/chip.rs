@@ -396,6 +396,21 @@ impl Chip8 {
             _ => println!("NO OPCODE"),
         }
     }
+
+    pub fn draw_graphics(&mut self) {
+
+        for y in 0..32 {
+            for x in 0..64 {
+
+                if self.display[(y * 64) + x] != 0 {
+
+                } else {
+                    
+                }
+            }
+        }
+
+    }
 }
 
 pub fn load_program(s: &mut Chip8, rom: &[u8]) {
