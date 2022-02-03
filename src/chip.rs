@@ -1,5 +1,24 @@
 use rand::Rng;
 use std::fs;
+use raylib::prelude::*;
+use raylib::prelude::RaylibDrawHandle;
+
+const font: &'static [u8]  = &[0xF0, 0x90, 0x90, 0x90, 0xF0,
+0x20, 0x60, 0x20, 0x20, 0x70,
+0xF0, 0x10, 0xF0, 0x80, 0xF0,
+0xF0, 0x10, 0xF0, 0x10, 0xF0,
+0x90, 0x90, 0xF0, 0x10, 0x10,
+0xF0, 0x80, 0xF0, 0x10, 0xF0,
+0xF0, 0x80, 0xF0, 0x90, 0xF0,
+0xF0, 0x10, 0x20, 0x40, 0x40,
+0xF0, 0x90, 0xF0, 0x90, 0xF0,
+0xF0, 0x90, 0xF0, 0x10, 0xF0,
+0xF0, 0x90, 0xF0, 0x90, 0x90,
+0xE0, 0x90, 0xE0, 0x90, 0xE0,
+0xF0, 0x80, 0x80, 0x80, 0xF0,
+0xE0, 0x90, 0x90, 0x90, 0xE0,
+0xF0, 0x80, 0xF0, 0x80, 0xF0,
+0xF0, 0x80, 0xF0, 0x80, 0x80];
 
 #[derive(Debug)]
 pub struct Chip8 {
@@ -15,7 +34,7 @@ pub struct Chip8 {
     key: [u8; 16],
     v: [u8; 16],
     halt: u8,
-    draw_flag: u8,
+    pub draw_flag: u8,
 }
 
 impl Chip8 {
@@ -34,6 +53,13 @@ impl Chip8 {
             v: [0; 16],
             halt: 0,
             draw_flag: 1,
+        }
+
+    }
+
+    pub fn load_fontset(&mut self) {
+        for i in 0..font.len() {
+            self.memory[i] = font[i];
         }
     }
 
@@ -397,14 +423,17 @@ impl Chip8 {
         }
     }
 
-    pub fn draw_graphics(&mut self) {
+    pub fn draw_graphics(&self , display: &mut RaylibDrawHandle) {
 
         for y in 0..32 {
             for x in 0..64 {
 
                 if self.display[(y * 64) + x] != 0 {
+                    display.draw_rectangle((x * 10) as i32, (y * 10) as i32, 10, 10, Color::WHITE);
+
 
                 } else {
+                    display.draw_rectangle((x * 10) as i32, (y * 10) as i32, 10, 10, Color::BLACK);
                     
                 }
             }
