@@ -5,9 +5,12 @@ use raylib::prelude::*;
 use std::fs;
 use std::path::Path;
 
+#[macro_use] extern crate text_io;
 fn main() {
+
+    let file_name = "Fishie.ch8";
     //Path to rom
-    let path: &Path = Path::new("Fishie.ch8");
+    let path: &Path = Path::new(file_name);
 
     //Contents of rom
     let rom: Vec<u8> = read_file(&path).unwrap();
@@ -22,23 +25,21 @@ fn main() {
     load_program(&mut chip, &rom);
 
     //String used to store input
-    let mut choice = String::new();
+    let mut choice: i32 = -1;
+
 
     //Keep trying to get input until valid input
-    while choice.is_empty() {
+    while choice != 0 && choice != 1 {
 
         println!("Press 0 to enter debug mode");
         println!("Press 1 to run the rom");
 
 
-        //Read input into "line" variable
-        std::io::stdin().read_line(&mut choice).unwrap();
+        //Read input into "choice" variable
+        choice = read!();
     }
 
-    //Remove extra stuff from end of input
-    choice = choice.trim().to_string();
-
-    if choice == "1" {
+    if choice == 1 {
         //Raylib
         let (mut rl, thread) = raylib::init().size(640, 480).title("HEllo, World").build();
 
@@ -65,19 +66,17 @@ fn main() {
         }
     } else {
         let mut step = -1;
-        let mut s = String::new();
         println!("Press 1 to go on to next cycle");
 
         while step == -1 {
-            std::io::stdin().read_line(&mut s).unwrap();
-            step = s.parse().unwrap();
+            step = read!();
 
             if step == 1 {
                 //Emulate a cycle
                 chip.emulate_cycle();
 
                 //Print state of chip
-                println!("{:#?}", chip);
+                println!("{:#X?}", chip);
                 println!();
                 step = -1;
 
