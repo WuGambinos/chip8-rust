@@ -5,7 +5,9 @@ use raylib::prelude::*;
 use std::fs;
 use std::path::Path;
 
+#[allow(arithmetic_overflow)]
 #[macro_use] extern crate text_io;
+
 fn main() {
 
     let file_name = "Fishie.ch8";

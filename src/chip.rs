@@ -161,6 +161,7 @@ impl Chip8 {
         self.pc += 2;
     }
 
+    #[allow(arithmetic_overflow)]
     pub fn op_7(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         self.v[x as usize] += self.opcode as u8;
