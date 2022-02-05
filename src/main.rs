@@ -6,10 +6,10 @@ use std::fs;
 use std::path::Path;
 
 #[allow(arithmetic_overflow)]
-#[macro_use] extern crate text_io;
+#[macro_use]
+extern crate text_io;
 
 fn main() {
-
     let file_name = "Fishie.ch8";
     //Path to rom
     let path: &Path = Path::new(file_name);
@@ -29,13 +29,10 @@ fn main() {
     //String used to store input
     let mut choice: i32 = -1;
 
-
     //Keep trying to get input until valid input
     while choice != 0 && choice != 1 {
-
         println!("Press 0 to enter debug mode");
         println!("Press 1 to run the rom");
-
 
         //Read input into "choice" variable
         choice = read!();

@@ -47,7 +47,7 @@ impl Chip8 {
     }
 
     pub fn load_fontset(&mut self) {
-        for (i,v ) in FONT.iter().enumerate() {
+        for (i, v) in FONT.iter().enumerate() {
             self.memory[i] = *v;
         }
     }
@@ -162,10 +162,11 @@ impl Chip8 {
     }
 
     pub fn op_7(&mut self) {
-        
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let res = self.opcode & 0x0FF;
-        self.v[x as usize] += res as u8;
+
+        //Fix overflow problem
+        self.v[x as usize] = (self.v[x as usize]).wrapping_add(res as u8);
         self.pc += 2;
     }
 
@@ -291,12 +292,10 @@ impl Chip8 {
 
             for xline in 0..8 {
                 if (pixel & (0x80 >> xline)) != 0 {
-                    if self.display[(self.v[x as usize]
-                        + xline
-                        + ((self.v[y as usize] + yline) * 64))
-                        as usize]
-                        == 1
-                    {
+                    let inner: u64 =
+                        (self.v[x as usize] + xline + ((self.v[y as usize] + yline) * 64)) as u64;
+
+                    if self.display[inner as usize] == 1 {
                         self.v[0xF] = 1;
                     }
 
