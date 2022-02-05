@@ -292,8 +292,13 @@ impl Chip8 {
 
             for xline in 0..8 {
                 if (pixel & (0x80 >> xline)) != 0 {
+
+                    let y_calc:u64 = (self.v[y as usize] + yline) as u64;
+                    //let y_calc: u64 = ((self.v[y as usize] + yline) * 64) as u64;
+                    println!("Y CALC: {}", y_calc);
+
                     let inner: u64 =
-                        (self.v[x as usize] + xline + ((self.v[y as usize] + yline) * 64)) as u64;
+                        self.v[x as usize] as u64 + xline as u64 + y_calc;
 
                     if self.display[inner as usize] == 1 {
                         self.v[0xF] = 1;
