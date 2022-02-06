@@ -9,7 +9,7 @@ use std::path::Path;
 extern crate text_io;
 
 fn main() {
-    let file_name = "test_opcode.ch8";
+    let file_name = "rps.ch8";
     //Path to rom
     let path: &Path = Path::new(file_name);
 
