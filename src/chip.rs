@@ -314,7 +314,7 @@ impl Chip8 {
                     self.v[0xF] = 0;
                 }
 
-                self.v[x as usize] += self.v[y as usize];
+                self.v[x as usize] = self.v[x as usize].wrapping_add(self.v[y as usize]);
                 self.pc += 2;
             }
 
@@ -325,7 +325,7 @@ impl Chip8 {
                     self.v[0xF] = 0;
                 }
 
-                self.v[x as usize] -= self.v[y as usize];
+                self.v[x as usize] = self.v[x as usize].wrapping_sub(self.v[y as usize]);
                 self.pc += 2;
             }
 
