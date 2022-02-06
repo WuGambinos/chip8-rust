@@ -230,7 +230,58 @@ impl Chip8 {
     }
 
 
-
+    /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
+    /// 
+    /// 8XY0 - VX = VY
+    /// 
+    /// Store value of register VY in VX
+    /// 
+    /// 8XY1 - VX = VX |  VY
+    /// 
+    /// Set register VX to the logical OR of register VX and register VY
+    /// 
+    /// 8XY2 - VX = VX & VY
+    /// 
+    /// Set register VX to the logical AND of register VX and register VY
+    /// 
+    /// 8XY3 - VX = VX ^ VY
+    /// 
+    /// Set register VX to the logical XOR or register VX and register VY
+    /// 
+    /// 8XY4 - VX = VX + VY, VF = carry
+    /// 
+    /// Add value of Vy to register VX
+    /// 
+    /// Set VF if carry occurs
+    /// 
+    /// Clear VF otherwise
+    /// 
+    /// 8XY5 - VX = VX - VY, set VF = NOT borrow
+    /// 
+    /// Subtract vlaue of register VY from register VX
+    /// 
+    /// Clear VF if a borrow occurs
+    /// 
+    /// Set VF if a borrow does not occur
+    /// 
+    /// 8XY6 - VX = VX >> 1
+    /// 
+    /// Store the value of register VY shifted right one bit in register VX
+    /// 
+    /// Set register VF to LSB of VX prior to shift
+    /// 
+    /// 8XY7 - VX = VY - VX, set VF = NOT borrow
+    /// 
+    /// Set register VX to the value of VY - VX
+    /// 
+    /// Clear VF if borrow occurs
+    /// 
+    /// Set VF if borrow does not occur
+    /// 
+    /// 8XYE - Store the value of register VY shifted to left by one bit in register VX
+    /// 
+    /// Set register VF to the MSB of VX prior to shift
+    /// 
     pub fn op_8(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
@@ -533,7 +584,17 @@ impl Chip8 {
         }
     }
 
-    ///
+    pub fn check_keys(&mut self, rl: &mut RaylibHandle) {
+        if rl.is_key_pressed(KeyboardKey::KEY_ONE) || rl.is_key_pressed(KeyboardKey::KEY_ONE) {
+            self.key[0x1] = 1;
+        }
+
+        else {
+            self.key[0x1] = 0;
+        }
+
+    }
+
     /// Draws graphics to raylib window
     pub fn draw_graphics(&self, display: &mut RaylibDrawHandle) {
         for y in 0..32 {
