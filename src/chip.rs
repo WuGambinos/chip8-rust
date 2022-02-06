@@ -1,3 +1,4 @@
+
 use rand::Rng;
 use raylib::prelude::RaylibDrawHandle;
 use raylib::prelude::*;
@@ -11,23 +12,50 @@ const FONT: &[u8] = &[
 ];
 
 #[derive(Debug)]
+///Representation of CHIP-8 Virtual Machine
 pub struct Chip8 {
+    ///Memory
     memory: [u8; 4096],
+
+    ///Display
     display: [u8; 64 * 32],
+
+    ///Program Counter
     pc: u16,
+
+    ///Index Register
     i: u16,
+
+    ///Stack
     stack: [u16; 16],
+
+    ///Stack Pointer
     sp: u16,
+
+    ///Delay Timer
     delay_timer: u16,
+
+    ///Sound Timer
     sound_timer: u16,
+
+    ///Current opcode
     opcode: u16,
+
+    ///Keys
     key: [u8; 16],
+
+    ///General Purpose Registers
     v: [u8; 16],
+
+    ///Halt Flag
     halt: u8,
+
+    ///Draw Flag
     pub draw_flag: u8,
 }
 
 impl Chip8 {
+    ///Instantiate an instance of CHIP-8
     pub fn new() -> Self {
         Chip8 {
             memory: [0; 4096],
@@ -46,12 +74,14 @@ impl Chip8 {
         }
     }
 
+    //Load fontset into memory
     pub fn load_fontset(&mut self) {
         for (i, v) in FONT.iter().enumerate() {
             self.memory[i] = *v;
         }
     }
 
+    ///Execute a Cycle
     pub fn emulate_cycle(&mut self) {
         //Opcode
         self.opcode = ((self.memory[self.pc as usize] as u16) << 8)
@@ -89,6 +119,11 @@ impl Chip8 {
         }
     }
 
+    /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
+    /// 
+    /// 00E0 - Clears screen
+    /// 
+    /// 00EE - Return (exit a subroutine)
     pub fn op_0(&mut self) {
         match self.opcode & 0x000F {
             0x0000 => {
@@ -108,6 +143,9 @@ impl Chip8 {
         };
     }
 
+    /// 1NNN - JMP NNN
+    /// 
+    /// Sets Program Counter to NNN 
     pub fn op_1(&mut self) {
         if self.opcode & 0x0FFF == self.pc {
             self.halt = 1;
@@ -117,12 +155,21 @@ impl Chip8 {
         self.pc = self.opcode & 0x0FFF;
     }
 
+    /// 2NNN - CALL NNN
+    /// 
+    /// Increments stack pointer, then puts the current PC on top of the stack
+    /// 
+    /// PC is then set to NNN
     pub fn op_2(&mut self) {
         self.stack[self.sp as usize] = self.pc;
         self.sp += 1;
         self.pc = self.opcode & 0xFFF;
     }
 
+    /// 3XNN - Skip if VX === NN
+    /// 
+    /// Skip next instructino if value in register VX is equal to NN
+    /// 
     pub fn op_3(&mut self) {
         let x: u8 = ((self.opcode & 0xF00) >> 8) as u8;
 
@@ -133,6 +180,9 @@ impl Chip8 {
         }
     }
 
+    /// 4XNN - Skip if VX != NN
+    /// 
+    /// Skip next instruction if value in resgier VX is not equal to NN
     pub fn op_4(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
 
@@ -143,6 +193,9 @@ impl Chip8 {
         }
     }
 
+    /// 5XY0 - Skip if VX == VY
+    /// 
+    /// Skip next instruction if value in register VX is equal to value in register VY
     pub fn op_5(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
@@ -154,6 +207,9 @@ impl Chip8 {
         }
     }
 
+    /// 6XNN - VX = NN
+    /// 
+    /// Store value NN in register VX
     pub fn op_6(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
 
@@ -161,6 +217,9 @@ impl Chip8 {
         self.pc += 2;
     }
 
+    /// 7XKK - VX += NN
+    /// 
+    /// Add value NN to register VX
     pub fn op_7(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let res = self.opcode & 0x0FF;
@@ -169,6 +228,8 @@ impl Chip8 {
         self.v[x as usize] = (self.v[x as usize]).wrapping_add(res as u8);
         self.pc += 2;
     }
+
+
 
     pub fn op_8(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -249,6 +310,9 @@ impl Chip8 {
         };
     }
 
+    /// 9XY - Skip if VX != VY
+    /// 
+    /// Skips next instruction if the value in register VX doesn't equal the value in register VY
     pub fn op_9(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
@@ -260,15 +324,24 @@ impl Chip8 {
         }
     }
 
+    /// ANNN - I = NNN
+    /// Store address NNN in register I
+    /// 
     pub fn op_a(&mut self) {
         self.i = self.opcode & 0x0FFF;
         self.pc += 2;
     }
 
+    /// BNNN - PC = NNN + V0
+    /// 
+    /// Jump to address NNN + V0
     pub fn op_b(&mut self) {
         self.pc += (self.v[0] as u16) + (self.opcode & 0x0FFF);
     }
 
+    /// CXKK - VX = (random byte) & (KK)
+    /// 
+    ///
     pub fn op_c(&mut self) {
         let mut rng = rand::thread_rng();
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -277,6 +350,9 @@ impl Chip8 {
         self.pc += 2;
     }
 
+    /// DXYN - Display n-byte sprite starting at memory locatoin I at (VX, VY)
+    /// 
+    /// set VF to 01 if nay set pixels are changed to unset, and 00 otherwise
     pub fn op_d(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
@@ -314,6 +390,17 @@ impl Chip8 {
         self.pc += 2;
     }
 
+    /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
+    /// 
+    /// EX9E - Skip next instruction if the key corresponding to hex value
+    /// 
+    /// currently stored in register VX is pressed
+    /// 
+    /// 
+    /// EXA1 - Skip next instruction if the key corresponding to hex value 
+    /// 
+    /// currently stored in register VX is not pressed
+    /// 
     pub fn op_e(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         match self.opcode as u8 {
@@ -336,6 +423,34 @@ impl Chip8 {
         };
     }
 
+    /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
+    /// 
+    /// FX07 - VX = delay_timer
+    /// 
+    /// Store delay timer value in register VX
+    /// 
+    /// FX0A - Wait for key press, store the value of key in register VX
+    /// 
+    /// FX15 - delay_timer = VX
+    /// 
+    /// FX18 - sound_timer = VX
+    /// 
+    /// FX1E - I = I + VX
+    /// 
+    /// FX29 - Store address of sprite data corresponding to
+    /// 
+    /// hexadecimal digit stored in register VX
+    /// 
+    /// FX33 - Store BCD representation of value in register VX 
+    /// 
+    /// in memory locations I, I+1, and I+2
+    /// 
+    /// FX55 - Store values of registers V0 through VX in memory starting at
+    /// location represented by value in register I
+    /// 
+    /// FX65 - Read values in registers V0 through VX from memory starting at
+    /// location represented by value in register I
+    ///
     pub fn op_f(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         match self.opcode as u8 {
@@ -418,6 +533,8 @@ impl Chip8 {
         }
     }
 
+    ///
+    /// Draws graphics to raylib window
     pub fn draw_graphics(&self, display: &mut RaylibDrawHandle) {
         for y in 0..32 {
             for x in 0..64 {
@@ -431,6 +548,7 @@ impl Chip8 {
     }
 }
 
+///Loads rom into memory of CHIP-8 Virtual Machine
 pub fn load_program(s: &mut Chip8, rom: &[u8]) {
     for (i, v) in rom.iter().enumerate() {
         s.memory[(i + 0x200) as usize] = *v;
