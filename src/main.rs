@@ -9,7 +9,7 @@ use std::path::Path;
 extern crate text_io;
 
 fn main() {
-    let file_name = "Fishie.ch8";
+    let file_name = "test_opcode.ch8";
     //Path to rom
     let path: &Path = Path::new(file_name);
 
@@ -53,6 +53,9 @@ fn main() {
 
             //Complete a cycle on the chip8
             chip.emulate_cycle();
+
+            //Check for keyboard input
+            chip.check_keys(&mut d);
 
             //Draw graphics if draw_flag is set
             if chip.draw_flag == 1 {

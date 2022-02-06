@@ -1,4 +1,3 @@
-
 use rand::Rng;
 use raylib::prelude::RaylibDrawHandle;
 use raylib::prelude::*;
@@ -120,9 +119,9 @@ impl Chip8 {
     }
 
     /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
-    /// 
+    ///
     /// 00E0 - Clears screen
-    /// 
+    ///
     /// 00EE - Return (exit a subroutine)
     pub fn op_0(&mut self) {
         match self.opcode & 0x000F {
@@ -144,8 +143,8 @@ impl Chip8 {
     }
 
     /// 1NNN - JMP NNN
-    /// 
-    /// Sets Program Counter to NNN 
+    ///
+    /// Sets Program Counter to NNN
     pub fn op_1(&mut self) {
         if self.opcode & 0x0FFF == self.pc {
             self.halt = 1;
@@ -156,9 +155,9 @@ impl Chip8 {
     }
 
     /// 2NNN - CALL NNN
-    /// 
+    ///
     /// Increments stack pointer, then puts the current PC on top of the stack
-    /// 
+    ///
     /// PC is then set to NNN
     pub fn op_2(&mut self) {
         self.stack[self.sp as usize] = self.pc;
@@ -167,9 +166,9 @@ impl Chip8 {
     }
 
     /// 3XNN - Skip if VX === NN
-    /// 
+    ///
     /// Skip next instructino if value in register VX is equal to NN
-    /// 
+    ///
     pub fn op_3(&mut self) {
         let x: u8 = ((self.opcode & 0xF00) >> 8) as u8;
 
@@ -181,7 +180,7 @@ impl Chip8 {
     }
 
     /// 4XNN - Skip if VX != NN
-    /// 
+    ///
     /// Skip next instruction if value in resgier VX is not equal to NN
     pub fn op_4(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -194,7 +193,7 @@ impl Chip8 {
     }
 
     /// 5XY0 - Skip if VX == VY
-    /// 
+    ///
     /// Skip next instruction if value in register VX is equal to value in register VY
     pub fn op_5(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -208,7 +207,7 @@ impl Chip8 {
     }
 
     /// 6XNN - VX = NN
-    /// 
+    ///
     /// Store value NN in register VX
     pub fn op_6(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -218,7 +217,7 @@ impl Chip8 {
     }
 
     /// 7XKK - VX += NN
-    /// 
+    ///
     /// Add value NN to register VX
     pub fn op_7(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -229,59 +228,58 @@ impl Chip8 {
         self.pc += 2;
     }
 
-
     /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
-    /// 
+    ///
     /// 8XY0 - VX = VY
-    /// 
+    ///
     /// Store value of register VY in VX
-    /// 
+    ///
     /// 8XY1 - VX = VX |  VY
-    /// 
+    ///
     /// Set register VX to the logical OR of register VX and register VY
-    /// 
+    ///
     /// 8XY2 - VX = VX & VY
-    /// 
+    ///
     /// Set register VX to the logical AND of register VX and register VY
-    /// 
+    ///
     /// 8XY3 - VX = VX ^ VY
-    /// 
+    ///
     /// Set register VX to the logical XOR or register VX and register VY
-    /// 
+    ///
     /// 8XY4 - VX = VX + VY, VF = carry
-    /// 
+    ///
     /// Add value of Vy to register VX
-    /// 
+    ///
     /// Set VF if carry occurs
-    /// 
+    ///
     /// Clear VF otherwise
-    /// 
+    ///
     /// 8XY5 - VX = VX - VY, set VF = NOT borrow
-    /// 
+    ///
     /// Subtract vlaue of register VY from register VX
-    /// 
+    ///
     /// Clear VF if a borrow occurs
-    /// 
+    ///
     /// Set VF if a borrow does not occur
-    /// 
+    ///
     /// 8XY6 - VX = VX >> 1
-    /// 
+    ///
     /// Store the value of register VY shifted right one bit in register VX
-    /// 
+    ///
     /// Set register VF to LSB of VX prior to shift
-    /// 
+    ///
     /// 8XY7 - VX = VY - VX, set VF = NOT borrow
-    /// 
+    ///
     /// Set register VX to the value of VY - VX
-    /// 
+    ///
     /// Clear VF if borrow occurs
-    /// 
+    ///
     /// Set VF if borrow does not occur
-    /// 
+    ///
     /// 8XYE - Store the value of register VY shifted to left by one bit in register VX
-    /// 
+    ///
     /// Set register VF to the MSB of VX prior to shift
-    /// 
+    ///
     pub fn op_8(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
@@ -362,7 +360,7 @@ impl Chip8 {
     }
 
     /// 9XY - Skip if VX != VY
-    /// 
+    ///
     /// Skips next instruction if the value in register VX doesn't equal the value in register VY
     pub fn op_9(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -377,21 +375,21 @@ impl Chip8 {
 
     /// ANNN - I = NNN
     /// Store address NNN in register I
-    /// 
+    ///
     pub fn op_a(&mut self) {
         self.i = self.opcode & 0x0FFF;
         self.pc += 2;
     }
 
     /// BNNN - PC = NNN + V0
-    /// 
+    ///
     /// Jump to address NNN + V0
     pub fn op_b(&mut self) {
         self.pc += (self.v[0] as u16) + (self.opcode & 0x0FFF);
     }
 
     /// CXKK - VX = (random byte) & (KK)
-    /// 
+    ///
     ///
     pub fn op_c(&mut self) {
         let mut rng = rand::thread_rng();
@@ -402,7 +400,7 @@ impl Chip8 {
     }
 
     /// DXYN - Display n-byte sprite starting at memory locatoin I at (VX, VY)
-    /// 
+    ///
     /// set VF to 01 if nay set pixels are changed to unset, and 00 otherwise
     pub fn op_d(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -419,14 +417,12 @@ impl Chip8 {
 
             for xline in 0..8 {
                 if (pixel & (0x80 >> xline)) != 0 {
-
-                    let mut y_calc:u64 = ((self.v[y as usize] + yline)) as u64;
+                    let mut y_calc: u64 = (self.v[y as usize] + yline) as u64;
                     y_calc = y_calc.wrapping_mul(64);
-                    
+
                     //let y_calc: u64 = ((self.v[y as usize] + yline) * 64) as u64;
 
-                    let inner: u64 =
-                        self.v[x as usize] as u64 + xline as u64 + y_calc;
+                    let inner: u64 = self.v[x as usize] as u64 + xline as u64 + y_calc;
 
                     if self.display[inner as usize] == 1 {
                         self.v[0xF] = 1;
@@ -442,16 +438,16 @@ impl Chip8 {
     }
 
     /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
-    /// 
+    ///
     /// EX9E - Skip next instruction if the key corresponding to hex value
-    /// 
+    ///
     /// currently stored in register VX is pressed
-    /// 
-    /// 
-    /// EXA1 - Skip next instruction if the key corresponding to hex value 
-    /// 
+    ///
+    ///
+    /// EXA1 - Skip next instruction if the key corresponding to hex value
+    ///
     /// currently stored in register VX is not pressed
-    /// 
+    ///
     pub fn op_e(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         match self.opcode as u8 {
@@ -475,30 +471,30 @@ impl Chip8 {
     }
 
     /// THIS FUNCTION CONTAINS MULTIPLE OPCODES
-    /// 
+    ///
     /// FX07 - VX = delay_timer
-    /// 
+    ///
     /// Store delay timer value in register VX
-    /// 
+    ///
     /// FX0A - Wait for key press, store the value of key in register VX
-    /// 
+    ///
     /// FX15 - delay_timer = VX
-    /// 
+    ///
     /// FX18 - sound_timer = VX
-    /// 
+    ///
     /// FX1E - I = I + VX
-    /// 
+    ///
     /// FX29 - Store address of sprite data corresponding to
-    /// 
+    ///
     /// hexadecimal digit stored in register VX
-    /// 
-    /// FX33 - Store BCD representation of value in register VX 
-    /// 
+    ///
+    /// FX33 - Store BCD representation of value in register VX
+    ///
     /// in memory locations I, I+1, and I+2
-    /// 
+    ///
     /// FX55 - Store values of registers V0 through VX in memory starting at
     /// location represented by value in register I
-    /// 
+    ///
     /// FX65 - Read values in registers V0 through VX from memory starting at
     /// location represented by value in register I
     ///
@@ -584,14 +580,67 @@ impl Chip8 {
         }
     }
 
-    pub fn check_keys(&mut self, rl: &mut RaylibHandle) {
-        if rl.is_key_pressed(KeyboardKey::KEY_ONE) || rl.is_key_pressed(KeyboardKey::KEY_ONE) {
-            self.key[0x1] = 1;
-        }
+    pub fn check_keys(&mut self, rl: &mut RaylibDrawHandle) {
+        //If '1' key is pressed or down
+        self.key[0x1] =
+            (rl.is_key_pressed(KeyboardKey::KEY_ONE) || rl.is_key_down(KeyboardKey::KEY_ONE)) as u8;
 
-        else {
-            self.key[0x1] = 0;
-        }
+        //If '2' key is pressed or down
+        self.key[0x2] =
+            (rl.is_key_pressed(KeyboardKey::KEY_TWO) || rl.is_key_down(KeyboardKey::KEY_TWO)) as u8;
+
+        //If '3' key  is pressed or down
+        self.key[0x3] = (rl.is_key_pressed(KeyboardKey::KEY_THREE)
+            || rl.is_key_down(KeyboardKey::KEY_THREE)) as u8;
+
+        //If '4' key is pressed or down
+        self.key[0xC] = (rl.is_key_pressed(KeyboardKey::KEY_FOUR)
+            || rl.is_key_down(KeyboardKey::KEY_FOUR)) as u8;
+        
+        //If 'Q' key is pressed or down
+        self.key[0x4] = (rl.is_key_pressed(KeyboardKey::KEY_Q)
+        || rl.is_key_down(KeyboardKey::KEY_Q)) as u8;
+    
+        //If 'W' key is pressed or down
+        self.key[0x5] = (rl.is_key_pressed(KeyboardKey::KEY_W)
+        || rl.is_key_down(KeyboardKey::KEY_W)) as u8;
+
+        //If 'E' key is pressed or down
+        self.key[0x6] = (rl.is_key_pressed(KeyboardKey::KEY_E)
+        || rl.is_key_down(KeyboardKey::KEY_E)) as u8;
+
+        //If 'R' key is pressed or down
+        self.key[0xD] = (rl.is_key_pressed(KeyboardKey::KEY_R)
+        || rl.is_key_down(KeyboardKey::KEY_R)) as u8;
+        
+        //If 'A' key is pressed or down
+        self.key[0x7] = (rl.is_key_pressed(KeyboardKey::KEY_A)
+        || rl.is_key_down(KeyboardKey::KEY_A)) as u8;
+
+        //If 'S' key is pressed or down
+        self.key[0x8] = (rl.is_key_pressed(KeyboardKey::KEY_S)
+        || rl.is_key_down(KeyboardKey::KEY_S)) as u8;
+
+        //If 'D' key is pressed or down
+        self.key[0x9] = (rl.is_key_pressed(KeyboardKey::KEY_D)
+        || rl.is_key_down(KeyboardKey::KEY_D)) as u8;
+
+        //If 'F' Key is pressed or down
+        self.key[0xE] = (rl.is_key_pressed(KeyboardKey::KEY_F)
+        || rl.is_key_down(KeyboardKey::KEY_F)) as u8;
+
+        self.key[0xA] = (rl.is_key_pressed(KeyboardKey::KEY_Z)
+        || rl.is_key_down(KeyboardKey::KEY_Z)) as u8;
+
+        self.key[0x0] = (rl.is_key_pressed(KeyboardKey::KEY_X)
+        || rl.is_key_down(KeyboardKey::KEY_X)) as u8;
+
+        self.key[0xB] = (rl.is_key_pressed(KeyboardKey::KEY_C)
+        || rl.is_key_down(KeyboardKey::KEY_C)) as u8;
+
+        self.key[0xF] = (rl.is_key_pressed(KeyboardKey::KEY_V)
+        || rl.is_key_down(KeyboardKey::KEY_V)) as u8;
+
 
     }
 
