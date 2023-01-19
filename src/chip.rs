@@ -1,6 +1,10 @@
 use rand::Rng;
 use raylib::prelude::RaylibDrawHandle;
 use raylib::prelude::*;
+use std::fs;
+use std::path::Path;
+use anyhow::Error;
+use anyhow::Result;
 
 const FONT: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
@@ -53,6 +57,11 @@ pub struct Chip8 {
     pub draw_flag: u8,
 }
 
+fn read_file(path: &Path) -> Result<Vec<u8>, std::io::Error> {
+    //Reads file contents into vector
+    fs::read(path)
+}
+
 impl Chip8 {
     ///Instantiate an instance of CHIP-8
     pub fn new() -> Self {
@@ -73,7 +82,88 @@ impl Chip8 {
         }
     }
 
-    //Load fontset into memory
+
+    pub fn start(&mut self, rom: &str) -> Result<(), Error> {
+
+        //Path to rom
+        let path: &Path = Path::new(rom);
+
+        //Contents of rom
+        let rom: Vec<u8> = read_file(&path).unwrap();
+
+        //Initialize Chip8
+        let mut chip: Chip8 = Chip8::new();
+
+        //Load fontsent into memory
+        chip.load_fontset();
+
+        //Load rom into memory
+        load_program(&mut chip, &rom);
+
+        //String used to store input
+        let mut choice: i32 = -1;
+
+        //Keep trying to get input until valid input
+        while choice != 0 && choice != 1 {
+            println!("Press 0 to enter debug mode");
+            println!("Press 1 to run the rom");
+
+            //Read input into "choice" variable
+            choice = read!();
+        }
+
+        if choice == 1 {
+            let (mut rl, thread) = raylib::init().size(640, 480).title("Chip-8 Interpreter").build();
+            //Raylib
+
+            //Set FPS to 60
+            rl.set_target_fps(60);
+
+            while !rl.window_should_close() {
+                //Begin Drawing
+                let mut d = rl.begin_drawing(&thread);
+
+                //Give Window a blue background
+                d.clear_background(Color::BLUE);
+
+                //Complete a cycle on the chip8
+                chip.emulate_cycle();
+
+                //Check for keyboard input
+                chip.check_keys(&mut d);
+
+                //Draw graphics if draw_flag is set
+                if chip.draw_flag == 1 {
+                    chip.draw_graphics(&mut d);
+                }
+            }
+        } else {
+            let mut step = -1;
+            println!("Press 1 to go on to next cycle");
+
+            while step == -1 {
+                step = read!();
+
+                if step == 1 {
+                    //Emulate a cycle
+                    chip.emulate_cycle();
+
+                    //Print state of chip
+                    println!("{:#X?}", chip);
+                    println!();
+                    step = -1;
+
+                    println!("Press 1 to go on to next cycle");
+                }
+            }
+        }
+
+        Ok(())
+
+
+    }
+
+    ///Load fontset into memory
     pub fn load_fontset(&mut self) {
         for (i, v) in FONT.iter().enumerate() {
             self.memory[i] = *v;
