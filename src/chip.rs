@@ -113,11 +113,11 @@ impl Chip8 {
         }
 
         if choice == 1 {
-            let (mut rl, thread) = raylib::init().size(640, 480).title("Chip-8 Interpreter").build();
+            let (mut rl, thread) = raylib::init().size(840, 320).title("Chip-8 Interpreter").build();
             //Raylib
 
             //Set FPS to 60
-            rl.set_target_fps(60);
+            rl.set_target_fps(500);
 
             while !rl.window_should_close() {
                 //Begin Drawing
@@ -238,7 +238,7 @@ impl Chip8 {
     pub fn op_1(&mut self) {
         if self.opcode & 0x0FFF == self.pc {
             self.halt = 1;
-            println!("INFINTE LOOP");
+            //println!("INFINTE LOOP");
         }
 
         self.pc = self.opcode & 0x0FFF;
@@ -489,36 +489,32 @@ impl Chip8 {
         self.pc += 2;
     }
 
-    /// DXYN - Display n-byte sprite starting at memory locatoin I at (VX, VY)
+    /// DXYN - Display n-byte sprite starting at memory location I at (VX, VY)
     ///
-    /// set VF to 01 if nay set pixels are changed to unset, and 00 otherwise
+    /// set VF to 01 if any set pixels are changed to unset, and 00 otherwise
     pub fn op_d(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
 
         //Height
         let h: u8 = (self.opcode & 0x000F) as u8;
-
-        let mut pixel: u8 = 0;
         self.v[0xF] = 0;
 
         for yline in 0..h {
-            pixel = self.memory[(self.i + (yline as u16)) as usize];
+            let mut pixel = self.memory[(self.i + (yline as u16)) as usize];
 
             for xline in 0..8 {
                 if (pixel & (0x80 >> xline)) != 0 {
                     let mut y_calc: u64 = (self.v[y as usize] + yline) as u64;
                     y_calc = y_calc.wrapping_mul(64);
 
-                    //let y_calc: u64 = ((self.v[y as usize] + yline) * 64) as u64;
-
                     let inner: u64 = self.v[x as usize] as u64 + xline as u64 + y_calc;
 
-                    if self.display[inner as usize] == 1 {
+                    if self.display[(inner % 2048) as usize] == 1 {
                         self.v[0xF] = 1;
                     }
 
-                    self.display[inner as usize] ^= 1;
+                    self.display[(inner % 2048) as usize] ^= 1;
                 }
             }
         }
