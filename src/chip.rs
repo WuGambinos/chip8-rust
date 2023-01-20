@@ -410,9 +410,9 @@ impl Chip8 {
 
             0x0005 => {
                 if self.v[y as usize] > self.v[x as usize] {
-                    self.v[0xF] = 1;
-                } else {
                     self.v[0xF] = 0;
+                } else {
+                    self.v[0xF] = 1;
                 }
 
                 self.v[x as usize] = self.v[x as usize].wrapping_sub(self.v[y as usize]);
