@@ -428,9 +428,9 @@ impl Chip8 {
 
             0x0007 => {
                 if self.v[x as usize] > self.v[y as usize] {
-                    self.v[0xF] = 1;
-                } else {
                     self.v[0xF] = 0;
+                } else {
+                    self.v[0xF] = 1;
                 }
 
                 self.v[x as usize] = self.v[y as usize] - self.v[x as usize];
