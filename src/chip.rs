@@ -84,7 +84,6 @@ impl Chip8 {
     }
 
     pub fn reset(&mut self) {
-        self.memory.fill(0);
         self.display.fill(0);
         self.pc = 0x200;
         self.i = 0;
@@ -155,6 +154,9 @@ impl Chip8 {
                 }
                 
                 // Check for Reset
+                if d.is_key_down(KeyboardKey::KEY_J) || d.is_key_pressed(KeyboardKey::KEY_J) {
+                    chip.reset();
+                }
             }
         } else {
             let mut step = -1;
@@ -224,7 +226,6 @@ impl Chip8 {
 
         if self.sound_timer > 0 {
             if self.sound_timer == 1 {
-                println!("BEEP\n");
                 // Play Beep
                 sound::beep();
             }
