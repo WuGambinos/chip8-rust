@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 use anyhow::Error;
 use anyhow::Result;
+use crate::sound;
 
 const FONT: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
@@ -82,6 +83,22 @@ impl Chip8 {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.memory.fill(0);
+        self.display.fill(0);
+        self.pc = 0x200;
+        self.i = 0;
+        self.stack.fill(0);
+        self.sp = 0;
+        self.delay_timer = 0;
+        self.sound_timer = 0;
+        self.opcode = 0;
+        self.key.fill(0);
+        self.v.fill(0);
+        self.halt = 0;
+        self.draw_flag = 1;
+    }
+
 
     pub fn start(&mut self, rom: &str) -> Result<(), Error> {
 
@@ -136,6 +153,8 @@ impl Chip8 {
                 if chip.draw_flag == 1 {
                     chip.draw_graphics(&mut d);
                 }
+                
+                // Check for Reset
             }
         } else {
             let mut step = -1;
@@ -204,6 +223,11 @@ impl Chip8 {
         }
 
         if self.sound_timer > 0 {
+            if self.sound_timer == 1 {
+                println!("BEEP\n");
+                // Play Beep
+                sound::beep();
+            }
             self.sound_timer -= 1;
         }
     }
