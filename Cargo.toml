@@ -9,3 +9,5 @@ edition = "2021"
 rand = "0.8.4"
 raylib = {version = "3.7"}
 text_io = "0.1.9"
+anyhow = "1.0"
+rodio = "0.14.0"
