@@ -1,6 +1,11 @@
 use rand::Rng;
 use raylib::prelude::RaylibDrawHandle;
 use raylib::prelude::*;
+use std::fs;
+use std::path::Path;
+use anyhow::Error;
+use anyhow::Result;
+use crate::sound;
 
 const FONT: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
@@ -53,6 +58,11 @@ pub struct Chip8 {
     pub draw_flag: u8,
 }
 
+fn read_file(path: &Path) -> Result<Vec<u8>, std::io::Error> {
+    //Reads file contents into vector
+    fs::read(path)
+}
+
 impl Chip8 {
     ///Instantiate an instance of CHIP-8
     pub fn new() -> Self {
@@ -73,7 +83,108 @@ impl Chip8 {
         }
     }
 
-    //Load fontset into memory
+    pub fn reset(&mut self) {
+        self.display.fill(0);
+        self.pc = 0x200;
+        self.i = 0;
+        self.stack.fill(0);
+        self.sp = 0;
+        self.delay_timer = 0;
+        self.sound_timer = 0;
+        self.opcode = 0;
+        self.key.fill(0);
+        self.v.fill(0);
+        self.halt = 0;
+        self.draw_flag = 1;
+    }
+
+
+    pub fn start(&mut self, rom: &str) -> Result<(), Error> {
+
+        //Path to rom
+        let path: &Path = Path::new(rom);
+
+        //Contents of rom
+        let rom: Vec<u8> = read_file(&path).unwrap();
+
+        //Initialize Chip8
+        let mut chip: Chip8 = Chip8::new();
+
+        //Load fontsent into memory
+        chip.load_fontset();
+
+        //Load rom into memory
+        load_program(&mut chip, &rom);
+
+        //String used to store input
+        let mut choice: i32 = -1;
+
+        //Keep trying to get input until valid input
+        while choice != 0 && choice != 1 {
+            println!("Press 0 to enter debug mode");
+            println!("Press 1 to run the rom");
+
+            //Read input into "choice" variable
+            choice = read!();
+        }
+
+        if choice == 1 {
+            let (mut rl, thread) = raylib::init().size(840, 320).title("Chip-8 Interpreter").build();
+            //Raylib
+
+            //Set FPS to 60
+            rl.set_target_fps(500);
+
+            while !rl.window_should_close() {
+                //Begin Drawing
+                let mut d = rl.begin_drawing(&thread);
+
+                //Give Window a blue background
+                d.clear_background(Color::BLUE);
+
+                //Complete a cycle on the chip8
+                chip.emulate_cycle();
+
+                //Check for keyboard input
+                chip.check_keys(&mut d);
+
+                //Draw graphics if draw_flag is set
+                if chip.draw_flag == 1 {
+                    chip.draw_graphics(&mut d);
+                }
+                
+                // Check for Reset
+                if d.is_key_down(KeyboardKey::KEY_J) || d.is_key_pressed(KeyboardKey::KEY_J) {
+                    chip.reset();
+                }
+            }
+        } else {
+            let mut step = -1;
+            println!("Press 1 to go on to next cycle");
+
+            while step == -1 {
+                step = read!();
+
+                if step == 1 {
+                    //Emulate a cycle
+                    chip.emulate_cycle();
+
+                    //Print state of chip
+                    println!("{:#X?}", chip);
+                    println!();
+                    step = -1;
+
+                    println!("Press 1 to go on to next cycle");
+                }
+            }
+        }
+
+        Ok(())
+
+
+    }
+
+    ///Load fontset into memory
     pub fn load_fontset(&mut self) {
         for (i, v) in FONT.iter().enumerate() {
             self.memory[i] = *v;
@@ -114,6 +225,10 @@ impl Chip8 {
         }
 
         if self.sound_timer > 0 {
+            if self.sound_timer == 1 {
+                // Play Beep
+                sound::beep();
+            }
             self.sound_timer -= 1;
         }
     }
@@ -148,7 +263,7 @@ impl Chip8 {
     pub fn op_1(&mut self) {
         if self.opcode & 0x0FFF == self.pc {
             self.halt = 1;
-            println!("INFINTE LOOP");
+            //println!("INFINTE LOOP");
         }
 
         self.pc = self.opcode & 0x0FFF;
@@ -320,9 +435,9 @@ impl Chip8 {
 
             0x0005 => {
                 if self.v[y as usize] > self.v[x as usize] {
-                    self.v[0xF] = 1;
-                } else {
                     self.v[0xF] = 0;
+                } else {
+                    self.v[0xF] = 1;
                 }
 
                 self.v[x as usize] = self.v[x as usize].wrapping_sub(self.v[y as usize]);
@@ -338,9 +453,9 @@ impl Chip8 {
 
             0x0007 => {
                 if self.v[x as usize] > self.v[y as usize] {
-                    self.v[0xF] = 1;
-                } else {
                     self.v[0xF] = 0;
+                } else {
+                    self.v[0xF] = 1;
                 }
 
                 self.v[x as usize] = self.v[y as usize] - self.v[x as usize];
@@ -399,36 +514,32 @@ impl Chip8 {
         self.pc += 2;
     }
 
-    /// DXYN - Display n-byte sprite starting at memory locatoin I at (VX, VY)
+    /// DXYN - Display n-byte sprite starting at memory location I at (VX, VY)
     ///
-    /// set VF to 01 if nay set pixels are changed to unset, and 00 otherwise
+    /// set VF to 01 if any set pixels are changed to unset, and 00 otherwise
     pub fn op_d(&mut self) {
         let x: u8 = ((self.opcode & 0x0F00) >> 8) as u8;
         let y: u8 = ((self.opcode & 0x00F0) >> 4) as u8;
 
         //Height
         let h: u8 = (self.opcode & 0x000F) as u8;
-
-        let mut pixel: u8 = 0;
         self.v[0xF] = 0;
 
         for yline in 0..h {
-            pixel = self.memory[(self.i + (yline as u16)) as usize];
+            let mut pixel = self.memory[(self.i + (yline as u16)) as usize];
 
             for xline in 0..8 {
                 if (pixel & (0x80 >> xline)) != 0 {
                     let mut y_calc: u64 = (self.v[y as usize] + yline) as u64;
                     y_calc = y_calc.wrapping_mul(64);
 
-                    //let y_calc: u64 = ((self.v[y as usize] + yline) * 64) as u64;
-
                     let inner: u64 = self.v[x as usize] as u64 + xline as u64 + y_calc;
 
-                    if self.display[inner as usize] == 1 {
+                    if self.display[(inner % 2048) as usize] == 1 {
                         self.v[0xF] = 1;
                     }
 
-                    self.display[inner as usize] ^= 1;
+                    self.display[(inner % 2048) as usize] ^= 1;
                 }
             }
         }
