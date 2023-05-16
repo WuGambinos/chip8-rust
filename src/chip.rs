@@ -227,7 +227,7 @@ impl Chip8 {
         if self.sound_timer > 0 {
             if self.sound_timer == 1 {
                 // Play Beep
-                sound::beep();
+                //sound::beep();
             }
             self.sound_timer -= 1;
         }
