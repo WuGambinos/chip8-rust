@@ -1,11 +1,12 @@
+use crate::sound;
+use anyhow::Error;
+use anyhow::Result;
 use rand::Rng;
 use raylib::prelude::RaylibDrawHandle;
 use raylib::prelude::*;
 use std::fs;
 use std::path::Path;
-use anyhow::Error;
-use anyhow::Result;
-use crate::sound;
+use std::thread::sleep_ms;
 
 const FONT: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
@@ -98,9 +99,7 @@ impl Chip8 {
         self.draw_flag = 1;
     }
 
-
     pub fn start(&mut self, rom: &str) -> Result<(), Error> {
-
         //Path to rom
         let path: &Path = Path::new(rom);
 
@@ -114,74 +113,73 @@ impl Chip8 {
         chip.load_fontset();
 
         //Load rom into memory
-        load_program(&mut chip, &rom);
+        chip.load_program(&rom);
 
-        //String used to store input
-        let mut choice: i32 = -1;
+        let mut paused: bool = false;
 
-        //Keep trying to get input until valid input
-        while choice != 0 && choice != 1 {
-            println!("Press 0 to enter debug mode");
-            println!("Press 1 to run the rom");
+        //Raylib
+        let (mut rl, thread) = raylib::init()
+            .size(840, 320)
+            .title("Chip-8 Interpreter")
+            .build();
 
-            //Read input into "choice" variable
-            choice = read!();
-        }
+        //Set FPS to 60
+        rl.set_target_fps(500);
 
-        if choice == 1 {
-            let (mut rl, thread) = raylib::init().size(840, 320).title("Chip-8 Interpreter").build();
-            //Raylib
+        while !rl.window_should_close() {
+            //Begin Drawing
+            let mut d = rl.begin_drawing(&thread);
 
-            //Set FPS to 60
-            rl.set_target_fps(500);
+            //Give Window a blue background
+            d.clear_background(Color::BLUE);
 
-            while !rl.window_should_close() {
-                //Begin Drawing
-                let mut d = rl.begin_drawing(&thread);
-
-                //Give Window a blue background
-                d.clear_background(Color::BLUE);
-
+            if !paused {
                 //Complete a cycle on the chip8
                 chip.emulate_cycle();
 
                 //Check for keyboard input
                 chip.check_keys(&mut d);
-
-                //Draw graphics if draw_flag is set
-                if chip.draw_flag == 1 {
-                    chip.draw_graphics(&mut d);
-                }
-                
-                // Check for Reset
-                if d.is_key_down(KeyboardKey::KEY_J) || d.is_key_pressed(KeyboardKey::KEY_J) {
-                    chip.reset();
-                }
             }
-        } else {
-            let mut step = -1;
-            println!("Press 1 to go on to next cycle");
 
-            while step == -1 {
-                step = read!();
+            //Draw graphics if draw_flag is set
+            if chip.draw_flag == 1 {
+                chip.draw_graphics(&mut d);
+            }
 
-                if step == 1 {
-                    //Emulate a cycle
-                    chip.emulate_cycle();
+            let pc_string: String = format!("PC: {:#X}", chip.pc);
+            d.draw_text(pc_string.as_str(), 700, 40, 10, Color::WHITE);
 
-                    //Print state of chip
-                    println!("{:#X?}", chip);
-                    println!();
-                    step = -1;
+            let sp_string: String = format!("SP: {:#X}", chip.sp);
+            d.draw_text(sp_string.as_str(), 700, 55, 10, Color::WHITE);
 
-                    println!("Press 1 to go on to next cycle");
-                }
+            for i in 0..=0xF {
+                let register: String = format!("V[{:X}]: {:#X}", i, chip.v[i]);
+                d.draw_text(
+                    register.as_str(),
+                    700,
+                    70 + (i as i32 * 10),
+                    10,
+                    Color::WHITE,
+                );
+            }
+
+            // Check for Reset
+            if d.is_key_down(KeyboardKey::KEY_J) || d.is_key_pressed(KeyboardKey::KEY_J) {
+                chip.reset();
+            }
+
+            // Check for pause
+            if d.is_key_pressed(KeyboardKey::KEY_SPACE) {
+                paused = !paused;
+            }
+
+            // Check for exit
+            if d.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
+                break;
             }
         }
 
         Ok(())
-
-
     }
 
     ///Load fontset into memory
@@ -707,52 +705,50 @@ impl Chip8 {
         //If '4' key is pressed or down
         self.key[0xC] = (rl.is_key_pressed(KeyboardKey::KEY_FOUR)
             || rl.is_key_down(KeyboardKey::KEY_FOUR)) as u8;
-        
+
         //If 'Q' key is pressed or down
-        self.key[0x4] = (rl.is_key_pressed(KeyboardKey::KEY_Q)
-        || rl.is_key_down(KeyboardKey::KEY_Q)) as u8;
-    
+        self.key[0x4] =
+            (rl.is_key_pressed(KeyboardKey::KEY_Q) || rl.is_key_down(KeyboardKey::KEY_Q)) as u8;
+
         //If 'W' key is pressed or down
-        self.key[0x5] = (rl.is_key_pressed(KeyboardKey::KEY_W)
-        || rl.is_key_down(KeyboardKey::KEY_W)) as u8;
+        self.key[0x5] =
+            (rl.is_key_pressed(KeyboardKey::KEY_W) || rl.is_key_down(KeyboardKey::KEY_W)) as u8;
 
         //If 'E' key is pressed or down
-        self.key[0x6] = (rl.is_key_pressed(KeyboardKey::KEY_E)
-        || rl.is_key_down(KeyboardKey::KEY_E)) as u8;
+        self.key[0x6] =
+            (rl.is_key_pressed(KeyboardKey::KEY_E) || rl.is_key_down(KeyboardKey::KEY_E)) as u8;
 
         //If 'R' key is pressed or down
-        self.key[0xD] = (rl.is_key_pressed(KeyboardKey::KEY_R)
-        || rl.is_key_down(KeyboardKey::KEY_R)) as u8;
-        
+        self.key[0xD] =
+            (rl.is_key_pressed(KeyboardKey::KEY_R) || rl.is_key_down(KeyboardKey::KEY_R)) as u8;
+
         //If 'A' key is pressed or down
-        self.key[0x7] = (rl.is_key_pressed(KeyboardKey::KEY_A)
-        || rl.is_key_down(KeyboardKey::KEY_A)) as u8;
+        self.key[0x7] =
+            (rl.is_key_pressed(KeyboardKey::KEY_A) || rl.is_key_down(KeyboardKey::KEY_A)) as u8;
 
         //If 'S' key is pressed or down
-        self.key[0x8] = (rl.is_key_pressed(KeyboardKey::KEY_S)
-        || rl.is_key_down(KeyboardKey::KEY_S)) as u8;
+        self.key[0x8] =
+            (rl.is_key_pressed(KeyboardKey::KEY_S) || rl.is_key_down(KeyboardKey::KEY_S)) as u8;
 
         //If 'D' key is pressed or down
-        self.key[0x9] = (rl.is_key_pressed(KeyboardKey::KEY_D)
-        || rl.is_key_down(KeyboardKey::KEY_D)) as u8;
+        self.key[0x9] =
+            (rl.is_key_pressed(KeyboardKey::KEY_D) || rl.is_key_down(KeyboardKey::KEY_D)) as u8;
 
         //If 'F' Key is pressed or down
-        self.key[0xE] = (rl.is_key_pressed(KeyboardKey::KEY_F)
-        || rl.is_key_down(KeyboardKey::KEY_F)) as u8;
+        self.key[0xE] =
+            (rl.is_key_pressed(KeyboardKey::KEY_F) || rl.is_key_down(KeyboardKey::KEY_F)) as u8;
 
-        self.key[0xA] = (rl.is_key_pressed(KeyboardKey::KEY_Z)
-        || rl.is_key_down(KeyboardKey::KEY_Z)) as u8;
+        self.key[0xA] =
+            (rl.is_key_pressed(KeyboardKey::KEY_Z) || rl.is_key_down(KeyboardKey::KEY_Z)) as u8;
 
-        self.key[0x0] = (rl.is_key_pressed(KeyboardKey::KEY_X)
-        || rl.is_key_down(KeyboardKey::KEY_X)) as u8;
+        self.key[0x0] =
+            (rl.is_key_pressed(KeyboardKey::KEY_X) || rl.is_key_down(KeyboardKey::KEY_X)) as u8;
 
-        self.key[0xB] = (rl.is_key_pressed(KeyboardKey::KEY_C)
-        || rl.is_key_down(KeyboardKey::KEY_C)) as u8;
+        self.key[0xB] =
+            (rl.is_key_pressed(KeyboardKey::KEY_C) || rl.is_key_down(KeyboardKey::KEY_C)) as u8;
 
-        self.key[0xF] = (rl.is_key_pressed(KeyboardKey::KEY_V)
-        || rl.is_key_down(KeyboardKey::KEY_V)) as u8;
-
-
+        self.key[0xF] =
+            (rl.is_key_pressed(KeyboardKey::KEY_V) || rl.is_key_down(KeyboardKey::KEY_V)) as u8;
     }
 
     /// Draws graphics to raylib window
@@ -767,11 +763,11 @@ impl Chip8 {
             }
         }
     }
-}
 
-///Loads rom into memory of CHIP-8 Virtual Machine
-pub fn load_program(s: &mut Chip8, rom: &[u8]) {
-    for (i, v) in rom.iter().enumerate() {
-        s.memory[(i + 0x200) as usize] = *v;
+    ///Loads rom into memory of CHIP-8 Virtual Machine
+    pub fn load_program(&mut self, rom: &[u8]) {
+        for (i, v) in rom.iter().enumerate() {
+            self.memory[(i + 0x200) as usize] = *v;
+        }
     }
 }
