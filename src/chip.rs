@@ -6,7 +6,6 @@ use raylib::prelude::RaylibDrawHandle;
 use raylib::prelude::*;
 use std::fs;
 use std::path::Path;
-use std::thread::sleep_ms;
 
 const FONT: &[u8] = &[
     0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70, 0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0,
@@ -19,48 +18,32 @@ const FONT: &[u8] = &[
 #[derive(Debug)]
 ///Representation of CHIP-8 Virtual Machine
 pub struct Chip8 {
-    ///Memory
-    memory: [u8; 4096],
+    pub memory: [u8; 4096],
 
-    ///Display
-    display: [u8; 64 * 32],
+    pub display: [u8; 64 * 32],
 
-    ///Program Counter
-    pc: u16,
+    pub pc: u16,
 
     ///Index Register
-    i: u16,
+    pub i: u16,
 
-    ///Stack
     stack: [u16; 16],
 
-    ///Stack Pointer
-    sp: u16,
+    pub sp: u16,
 
-    ///Delay Timer
-    delay_timer: u16,
-
-    ///Sound Timer
-    sound_timer: u16,
-
-    ///Current opcode
-    opcode: u16,
-
-    ///Keys
+    pub delay_timer: u16,
+    pub sound_timer: u16,
+    pub opcode: u16,
     key: [u8; 16],
 
     ///General Purpose Registers
-    v: [u8; 16],
+    pub v: [u8; 16],
 
-    ///Halt Flag
     halt: u8,
-
-    ///Draw Flag
     pub draw_flag: u8,
 }
 
 fn read_file(path: &Path) -> Result<Vec<u8>, std::io::Error> {
-    //Reads file contents into vector
     fs::read(path)
 }
 
@@ -104,92 +87,19 @@ impl Chip8 {
         let path: &Path = Path::new(rom);
 
         //Contents of rom
-        let rom: Vec<u8> = read_file(&path).unwrap();
+        let rom: Vec<u8> = read_file(&path)?;
 
-        //Initialize Chip8
-        let mut chip: Chip8 = Chip8::new();
-
-        //Load fontsent into memory
-        chip.load_fontset();
-
-        //Load rom into memory
-        chip.load_program(&rom);
-
-        let mut paused: bool = false;
-
-        //Raylib
-        let (mut rl, thread) = raylib::init()
-            .size(840, 320)
-            .title("Chip-8 Interpreter")
-            .build();
-
-        //Set FPS to 60
-        rl.set_target_fps(500);
-
-        while !rl.window_should_close() {
-            //Begin Drawing
-            let mut d = rl.begin_drawing(&thread);
-
-            //Give Window a blue background
-            d.clear_background(Color::BLUE);
-
-            if !paused {
-                //Complete a cycle on the chip8
-                chip.emulate_cycle();
-
-                //Check for keyboard input
-                chip.check_keys(&mut d);
-            }
-
-            //Draw graphics if draw_flag is set
-            if chip.draw_flag == 1 {
-                chip.draw_graphics(&mut d);
-            }
-
-            let pc_string: String = format!("PC: {:#X}", chip.pc);
-            d.draw_text(pc_string.as_str(), 700, 40, 10, Color::WHITE);
-
-            let sp_string: String = format!("SP: {:#X}", chip.sp);
-            d.draw_text(sp_string.as_str(), 700, 55, 10, Color::WHITE);
-
-            for i in 0..=0xF {
-                let register: String = format!("V[{:X}]: {:#X}", i, chip.v[i]);
-                d.draw_text(
-                    register.as_str(),
-                    700,
-                    70 + (i as i32 * 10),
-                    10,
-                    Color::WHITE,
-                );
-            }
-
-            // Check for Reset
-            if d.is_key_down(KeyboardKey::KEY_J) || d.is_key_pressed(KeyboardKey::KEY_J) {
-                chip.reset();
-            }
-
-            // Check for pause
-            if d.is_key_pressed(KeyboardKey::KEY_SPACE) {
-                paused = !paused;
-            }
-
-            // Check for exit
-            if d.is_key_pressed(KeyboardKey::KEY_ESCAPE) {
-                break;
-            }
-        }
-
+        self.load_fontset();
+        self.load_program(&rom);
         Ok(())
     }
 
-    ///Load fontset into memory
     pub fn load_fontset(&mut self) {
         for (i, v) in FONT.iter().enumerate() {
             self.memory[i] = *v;
         }
     }
 
-    ///Execute a Cycle
     pub fn emulate_cycle(&mut self) {
         //Opcode
         self.opcode = ((self.memory[self.pc as usize] as u16) << 8)
